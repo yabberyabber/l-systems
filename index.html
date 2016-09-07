@@ -1,0 +1,114 @@
+<html>
+    <head>
+    </head>
+    <body>
+        <canvas id="pretty" width="800px" height="800px" style="border: 1px solid black; float: left;">
+        </canvas>
+        <form onsubmit="handleSubmit()" action='#' >
+            Axiom <input id="string" type="text" value="X" />
+            <br />
+            forward distance <input id="Fdist" type="text" value="8" />
+            <br />
+            turn in degrees <input id="turnDeg" type="text" value="20" />
+            <br />
+            Recursion <input id="recursion" type="text" value="6" />
+            <br />
+            Rules <textarea id="rules" rows="8" cols="50" >
+{
+"X": "F[+X]F[-X]+X",
+"F": "FF"
+}
+            </textarea>
+            <br />
+            <input id="draw" type="submit" value="draw" />
+        </form>
+        <script>
+var canvas = document.getElementById("pretty");
+var ctx = canvas.getContext("2d");
+
+function newTurtle( x, y, rot ) {
+    return { x: x || canvas.width / 2.0,
+             y: y || canvas.height / 2.0,
+             rot: rot || 0.0 };
+}
+
+function cloneTurtle( turtle ) {
+    return newTurtle( turtle.x, turtle.y, turtle.rot );
+}
+
+function degrees( x ) {
+    return x * 180.0 / Math.PI;
+}
+
+function radians( x ) {
+    return x * Math.PI / 180.0;
+}
+
+function redraw( startCtx, pattern, fDist, turnDeg ) {
+    ctx.clearRect( 0, 0, canvas.width, canvas.height );
+    console.log( "pattern", pattern );
+    console.log( "fdist", fDist );
+    console.log( "turn", turnDeg );
+    contexts = [ startCtx ];
+    for( var i = 0; i < pattern.length; i++ ){
+        var cmd = pattern[ i ];
+        topTurtle = contexts[ contexts.length - 1 ];
+        if ( cmd == '+' ) {
+            topTurtle.rot += turnDeg;
+        }
+        else if ( cmd == '-' ) {
+            topTurtle.rot -= turnDeg;
+        }
+        else if ( cmd == 'F' ) {
+            var dX = fDist * Math.cos( radians( topTurtle.rot ) );
+            var dY = fDist * Math.sin( radians( topTurtle.rot ) );
+            ctx.beginPath();
+            ctx.moveTo( topTurtle.x, topTurtle.y );
+            ctx.lineTo( topTurtle.x + dX, topTurtle.y + dY );
+            ctx.stroke();
+            topTurtle.x += dX;
+            topTurtle.y += dY;
+        }
+        else if ( cmd == '[' ) {
+            contexts.push( cloneTurtle( topTurtle ) );
+        }
+        else if ( cmd == ']' ) {
+            contexts.pop();
+        }
+    }
+}
+
+function applyRules( str, rules ) {
+    ret = "";
+    for( var i = 0; i < str.length; i++ ) {
+        cur = str[ i ];
+        ret += rules[ cur ] || cur;
+    }
+    return ret;
+}
+
+function genString( axiom, rules, rec ) {
+    for( var i = 0; i < rec; i++ ) {
+        axiom = applyRules( axiom, rules );
+    }
+    return axiom;
+}
+
+function handleSubmit() {
+    pattern = genString( document.getElementById('string').value,
+                         JSON.parse( document.getElementById('rules').value ),
+                         Number( document.getElementById('recursion').value ) );
+
+    redraw( newTurtle( canvas.width / 2, canvas.height, -90 ),
+            pattern,
+            Number( document.getElementById('Fdist').value ) || 10,
+            Number( document.getElementById('turnDeg').value ) || 90 );
+
+    return false;
+}
+
+window.onload = handleSubmit;
+
+        </script>
+    </body>
+</html>
